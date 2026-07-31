@@ -101,10 +101,11 @@ function newPlayer(home: number, facing: 1 | -1, score = 0): PlayerState {
  * coartada al que pierde.
  */
 export function rollWind(rng: Rng): number {
-  // La base sube de +-5 a +-7 y la racha se recorta de 3x a 2,2x: la banda
-  // habitual pasa de 1-4 a 1-5,5 sin mover el techo (~15), que ya era el
-  // extremo raro que hace memorable un turno.
-  let wind = rng.range(-7, 7);
+  // Base +-9 con una racha de hasta 2,2x en uno de cada tres turnos: la banda
+  // habitual ronda 1-7 y el techo llega a ~20. Las rachas extremas son raras a
+  // proposito — son las que hacen memorable un turno, y dejan de serlo si
+  // aparecen cada dos por tres.
+  let wind = rng.range(-9, 9);
   if (rng.bool(1 / 3)) wind *= rng.range(1, 2.2);
   return wind;
 }

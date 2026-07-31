@@ -40,9 +40,9 @@ describe('cloudDriftStep', () => {
     expect(cloudDriftStep(10, 1)).toBeCloseTo(cloudDriftStep(5, 1) * 2, 9);
   });
 
-  it('es lento incluso con viento fuerte', () => {
+  it('es lento incluso con la racha mas fuerte', () => {
     // El fondo da profundidad; no puede competir con la trayectoria.
-    expect(Math.abs(cloudDriftStep(15, 1))).toBeLessThan(2.5);
+    expect(Math.abs(cloudDriftStep(20, 1))).toBeLessThan(3);
   });
 });
 
@@ -50,18 +50,25 @@ describe('rango de viento', () => {
   const muestra = Array.from({ length: 4000 }, (_, t) => windForTurn(20260731, t));
   const fuerzas = muestra.map(Math.abs);
 
-  it('la banda habitual llega hasta ~5,5 y no se queda en 4', () => {
-    const mediana = [...fuerzas].sort((a, b) => a - b)[Math.floor(fuerzas.length / 2)]!;
-    expect(mediana).toBeGreaterThan(2.5);
-    const dentroDeBanda = fuerzas.filter((f) => f <= 5.5).length / fuerzas.length;
-    expect(dentroDeBanda).toBeGreaterThan(0.55);
+  const ordenadas = [...fuerzas].sort((a, b) => a - b);
+  const percentil = (p: number) => ordenadas[Math.floor(ordenadas.length * p)]!;
+
+  it('el turno corriente tiene viento de verdad, no una brisa', () => {
+    // Con la mediana por debajo de 3 el viento deja de importar y el juego se
+    // vuelve balistica pura.
+    expect(percentil(0.5)).toBeGreaterThan(4);
+    expect(percentil(0.5)).toBeLessThan(7);
   });
 
-  it('conserva la cola larga de rachas extremas del original', () => {
-    // Es la aleatoriedad que impide memorizar tiros y le da coartada al que
-    // pierde: sin rachas raras, el viento deja de contar historias.
-    expect(Math.max(...fuerzas)).toBeGreaterThan(10);
-    expect(Math.max(...fuerzas)).toBeLessThan(16);
+  it('llega hasta ~20 en las rachas', () => {
+    expect(Math.max(...fuerzas)).toBeGreaterThan(17);
+    expect(Math.max(...fuerzas)).toBeLessThan(21);
+  });
+
+  it('pero las rachas fuertes siguen siendo raras', () => {
+    // Son las que hacen memorable un turno, y dejan de serlo si salen cada dos
+    // por tres. Uno de cada diez turnos como mucho pasa de 10.
+    expect(percentil(0.9)).toBeLessThan(11);
   });
 
   it('sopla a los dos lados por igual', () => {
