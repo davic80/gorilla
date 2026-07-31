@@ -1,0 +1,19 @@
+node_modules
+dist
+.git
+.github
+.claude
+.vite
+coverage
+*.local
+.DS_Store
+PLAN.md
+README.md
+deploy
+
+# Despliegue
+docker-compose.yml
+.env
+.env.example
+Dockerfile
+nginx.conf

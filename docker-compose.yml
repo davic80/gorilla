@@ -1,0 +1,36 @@
+# gorilla — SOLO la app, detrás del Caddy que ya sirve el resto de proyectos.
+# Aquí no hay un segundo Caddy: el compartido hace reverse_proxy a este
+# contenedor por su nombre a través de una red Docker común.
+#
+# Puesta en marcha:
+#   1) Averigua la red de tu Caddy:
+#        docker inspect cloud-caddy-1 \
+#          --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'
+#   2) Ponla en .env como PROXY_NETWORK
+#   3) docker compose up -d
+#   4) Añade al Caddyfile compartido:
+#        gorilla.ojoalprecio.com {
+#            reverse_proxy gorilla:80
+#        }
+#      Y recarga:  docker exec cloud-caddy-1 caddy reload --config /etc/caddy/Caddyfile
+
+services:
+  gorilla:
+    image: ghcr.io/davic80/gorilla:${GORILLA_TAG:-latest}
+    restart: unless-stopped
+    expose:
+      - "80" # solo interno; alcanzable por Caddy en la red compartida
+    networks:
+      proxy:
+        aliases:
+          - gorilla
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?define PROXY_NETWORK en .env con la red de tu Caddy}
