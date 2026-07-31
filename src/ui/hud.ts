@@ -56,11 +56,13 @@ export class Hud {
   private readonly diag = need('diag');
   private readonly mute = need<HTMLButtonElement>('mute');
   private readonly assist = need<HTMLButtonElement>('assist');
+  private readonly version = need('version');
 
   /** Aviso efimero que se impone al banner de estado. */
   private toast: { text: string; until: number } | null = null;
 
   constructor(hooks: HudHooks) {
+    setText(this.version, `v${__APP_VERSION__}`);
     this.mute.addEventListener('click', () => hooks.onToggleMute());
     this.assist.addEventListener('click', () => hooks.onCycleAssist());
   }
@@ -70,8 +72,12 @@ export class Hud {
     setText(this.diag, lines);
   }
 
-  setLayout(hudBand: number): void {
-    document.documentElement.style.setProperty('--hud-band', `${Math.max(64, hudBand)}px`);
+  setLayout(hudBand: number, footerHeight: number): void {
+    const root = document.documentElement;
+    root.style.setProperty('--hud-band', `${Math.max(64, hudBand)}px`);
+    // Publicado desde el render: si el CSS y la zona de tiro discreparan, el
+    // enlace acabaria robando arrastres o quedando fuera de alcance.
+    root.style.setProperty('--footer-h', `${footerHeight}px`);
   }
 
   /** Un chip sin etiqueta no se entiende hasta que lo tocas: al tocarlo, lo dice. */

@@ -33,7 +33,7 @@ import { Feedback } from './input/feedback';
 import { createStage, syncStageSize } from './render/canvas';
 import { DUCK_DURATION, GESTURE, drawScene, type Gesture, type GestureKind } from './render/scene';
 import { TerrainLayer } from './render/terrainLayer';
-import { computeViewport, readSafeInset, type Viewport } from './render/viewport';
+import { FOOTER_H, computeViewport, readSafeInset, type Viewport } from './render/viewport';
 import { buildSky, cloudDriftStep, type Sky } from './render/sky';
 import { buildWindows, type CityWindow } from './render/windows';
 import { Hud } from './ui/hud';
@@ -237,7 +237,7 @@ function reactToPhase(): void {
 
 const aim = new AimController(canvas, {
   enabled: () => match.phase === 'aiming',
-  canStartAt: (_x, y) => y >= viewport.groundY - DRAG_ZONE_TOP,
+  canStartAt: (_x, y) => y >= viewport.groundY - DRAG_ZONE_TOP && y < viewport.footerTop,
   facing: () => match.players[match.current].facing,
   onAim: (next, drag) => {
     touchHint = null;
@@ -304,7 +304,7 @@ function refreshViewport(): void {
     readSafeInset(root, '--safe-bottom'),
     readSafeInset(root, '--safe-top'),
   );
-  hud.setLayout(viewport.hudBandHeight);
+  hud.setLayout(viewport.hudBandHeight, FOOTER_H);
 }
 
 function render(alpha: number, glow: number): void {

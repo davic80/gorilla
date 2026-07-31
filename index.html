@@ -38,6 +38,20 @@
            indicadores de angulo y potencia los pinta el canvas arriba, donde no
            los tapa la mano. -->
       <div id="banner" hidden></div>
+
+      <!-- La franja de abajo es zona de tiro: esta banda queda excluida del
+           gesto (ver `footerTop` en viewport.ts) para que el enlace se pueda
+           pulsar sin robarle arrastres al juego. -->
+      <footer id="footer">
+        <span id="version"></span>
+        <a
+          class="coffee"
+          href="https://www.paypal.com/donate/?hosted_button_id=7Z6JDTBCDCWHC"
+          target="_blank"
+          rel="noopener noreferrer"
+          >☕ Invítame a un café</a
+        >
+      </footer>
     </div>
 
     <!-- La arena esta disenada en vertical: en apaisado no cabe la parabola y

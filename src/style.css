@@ -181,6 +181,40 @@ body {
 /* La franja de control no tiene DOM: es zona tactil pura, la pinta el canvas y
    los indicadores viven arriba. Aqui no queda nada que estilar. */
 
+/* ---------- pie ---------- */
+
+#footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Lo fija el render, para que no pueda desincronizarse de la zona de tiro. */
+  height: calc(var(--footer-h, 48px) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font: 500 11px/1 ui-sans-serif, system-ui, sans-serif;
+  color: #55628a;
+}
+
+#footer a {
+  /* Lo unico pulsable del pie. Area tactil de 40px de alto: por debajo de eso
+     un pulgar falla, y aqui fallar significa arrastrar sin querer. */
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 10px;
+  color: #8d9bc0;
+  text-decoration: none;
+}
+
+#footer a:active {
+  color: #cdd8f2;
+}
+
 /* ---------- bloqueo de apaisado ---------- */
 
 #rotate {

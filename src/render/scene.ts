@@ -681,6 +681,6 @@ function drawTouchHint(
   ctx.fillStyle = '#8d9bc0';
   ctx.textAlign = 'center';
   ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif';
-  ctx.fillText('Arrastra desde aquí y suelta', ax, vp.groundY + vp.stripHeight * 0.93);
+  ctx.fillText('Arrastra desde aquí y suelta', ax, vp.groundY + vp.stripHeight * 0.72);
   ctx.restore();
 }

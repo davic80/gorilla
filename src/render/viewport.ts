@@ -30,6 +30,12 @@ export interface Viewport {
   hudBandHeight: number;
   /** Inset superior seguro, para que el canvas no dibuje bajo la muesca. */
   safeTop: number;
+  /**
+   * Y donde empieza el pie de pagina. Toda la franja de abajo es zona de tiro,
+   * asi que cualquier cosa pulsable ahi robaria arrastres: esta banda queda
+   * fuera del gesto para que el enlace sea alcanzable sin pelearse con el.
+   */
+  footerTop: number;
 }
 
 /**
@@ -39,6 +45,15 @@ export interface Viewport {
  */
 const MIN_STRIP = 200;
 const STRIP_RATIO = 0.28;
+
+/**
+ * Alto del pie de pagina, sin contar el inset seguro del movil.
+ *
+ * Toda la franja de abajo es zona de tiro, asi que cualquier cosa pulsable ahi
+ * robaria arrastres. Esta banda queda fuera del gesto para que el enlace sea
+ * alcanzable sin pelearse con el.
+ */
+export const FOOTER_H = 48;
 
 export function computeViewport(
   cssWidth: number,
@@ -69,6 +84,7 @@ export function computeViewport(
     playTop,
     hudBandHeight: playTop,
     safeTop,
+    footerTop: cssHeight - (FOOTER_H + safeBottom),
   };
 }
 
