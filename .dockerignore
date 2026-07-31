@@ -11,9 +11,9 @@ PLAN.md
 README.md
 deploy
 
-# Despliegue
+# Despliegue: solo lo que se ejecuta EN el servidor, no dentro de la imagen.
+# Ojo: nginx.conf no puede entrar aqui, el Dockerfile lo copia.
 docker-compose.yml
 .env
 .env.example
-Dockerfile
-nginx.conf
+DEPLOY.md
