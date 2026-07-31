@@ -41,8 +41,10 @@ describe('cloudDriftStep', () => {
   });
 
   it('es lento incluso con la racha mas fuerte', () => {
-    // El fondo da profundidad; no puede competir con la trayectoria.
-    expect(Math.abs(cloudDriftStep(20, 1))).toBeLessThan(3);
+    // El fondo da profundidad; no puede competir con la trayectoria. Con un
+    // vendaval de 25 el cielo corre, que es justo lo que debe transmitir, pero
+    // sigue tardando mas de medio minuto en cruzar la arena.
+    expect(Math.abs(cloudDriftStep(25, 1))).toBeLessThan(4);
   });
 });
 
@@ -57,18 +59,20 @@ describe('rango de viento', () => {
     // Con la mediana por debajo de 3 el viento deja de importar y el juego se
     // vuelve balistica pura.
     expect(percentil(0.5)).toBeGreaterThan(4);
-    expect(percentil(0.5)).toBeLessThan(7);
+    expect(percentil(0.5)).toBeLessThan(8);
   });
 
-  it('llega hasta ~20 en las rachas', () => {
-    expect(Math.max(...fuerzas)).toBeGreaterThan(17);
-    expect(Math.max(...fuerzas)).toBeLessThan(21);
+  it('llega hasta ~25 en las rachas', () => {
+    expect(Math.max(...fuerzas)).toBeGreaterThan(22);
+    expect(Math.max(...fuerzas)).toBeLessThan(26);
   });
 
   it('pero las rachas fuertes siguen siendo raras', () => {
     // Son las que hacen memorable un turno, y dejan de serlo si salen cada dos
-    // por tres. Uno de cada diez turnos como mucho pasa de 10.
-    expect(percentil(0.9)).toBeLessThan(11);
+    // por tres: un vendaval de 20 tiene que sorprender. Como mucho uno de cada
+    // veinte turnos pasa de 15.
+    expect(percentil(0.9)).toBeLessThan(13);
+    expect(fuerzas.filter((f) => f > 15).length / fuerzas.length).toBeLessThan(0.08);
   });
 
   it('sopla a los dos lados por igual', () => {

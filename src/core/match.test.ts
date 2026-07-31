@@ -81,7 +81,7 @@ describe('viento', () => {
 
   it('se mantiene en un rango jugable', () => {
     for (let t = 0; t < 400; t++) {
-      expect(Math.abs(windForTurn(12345, t))).toBeLessThan(21);
+      expect(Math.abs(windForTurn(12345, t))).toBeLessThan(26);
     }
   });
 });
