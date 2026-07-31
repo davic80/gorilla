@@ -34,7 +34,7 @@ describe('powerFromPull', () => {
     expect(powerFromPull(PULL_COARSE)).toBeCloseTo(POWER_AT_COARSE, 6);
   });
 
-  it('el modo fino reduce la ganancia al cuarto', () => {
+  it('el modo fino reduce la ganancia en la proporcion configurada', () => {
     const grueso = powerFromPull(100) - powerFromPull(80);
     const fino = powerFromPull(PULL_COARSE + 40) - powerFromPull(PULL_COARSE + 20);
     expect(fino).toBeCloseTo(grueso * FINE_GAIN, 6);
@@ -44,10 +44,19 @@ describe('powerFromPull', () => {
     expect(powerFromPull(5000)).toBe(100);
   });
 
-  it('la potencia maxima se alcanza con un arrastre realizable en un movil', () => {
-    // Si llegar a 100 exigiera cruzar la pantalla entera, el modo fino seria
-    // una trampa en vez de una ayuda.
-    expect(pullForPower(100)).toBeLessThan(280);
+  it('la potencia maxima cabe en el sitio que hay de verdad', () => {
+    // El gesto arranca en la linea de suelo o mas abajo, asi que hacia el borde
+    // inferior quedan unos 180px. Un recorrido mayor deja el 100 inalcanzable
+    // salvo empezando pegado al borde o tirando en diagonal, lo que ademas te
+    // cambia el angulo. Paso jugando con el techo anterior de 239px.
+    expect(pullForPower(100)).toBeLessThan(160);
+  });
+
+  it('el tramo fino sigue siendo mucho mas preciso que el grueso', () => {
+    // Acortar el recorrido no puede cargarse la razon de ser del modo fino.
+    const grueso = powerFromPull(60) - powerFromPull(40);
+    const fino = powerFromPull(PULL_COARSE + 40) - powerFromPull(PULL_COARSE + 20);
+    expect(grueso / fino).toBeGreaterThan(3);
   });
 
   it('pullForPower es la inversa de powerFromPull', () => {

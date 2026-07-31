@@ -12,18 +12,31 @@ import { ANGLE_MAX, ANGLE_MIN, type Aim } from '../core/match';
 /** Por debajo de esto el gesto se considera un toque y se cancela. */
 export const PULL_MIN = 14;
 
-/** Radio del tramo grueso, en pixeles CSS. */
-export const PULL_COARSE = 140;
+/**
+ * Radio del tramo grueso, en pixeles CSS.
+ *
+ * El limite real no es el gusto sino la pantalla: el gesto arranca en la linea
+ * de suelo o mas abajo, asi que hacia abajo solo quedan ~180px antes del borde.
+ * Con la curva anterior la potencia maxima exigia 239px de arrastre y era
+ * inalcanzable salvo empezando pegado al borde superior de la franja, o tirando
+ * en diagonal (lo que ademas te cambiaba el angulo).
+ */
+export const PULL_COARSE = 100;
 
 /**
  * Potencia alcanzada al final del tramo grueso. No llega a 100 aposta: el
  * ultimo tramo se reserva al modo fino, donde el jugador afina el tiro que se
  * quedo corto en vez de repetirlo a ciegas.
  */
-export const POWER_AT_COARSE = 85;
+export const POWER_AT_COARSE = 88;
 
-/** Ganancia del modo fino. Es el truco del cursor de iOS. */
-export const FINE_GAIN = 0.25;
+/**
+ * Ganancia del modo fino. Es el truco del cursor de iOS.
+ *
+ * Sube de 0,25 a 0,3 como parte de acortar el recorrido: el tramo fino sigue
+ * siendo mas de tres veces mas preciso que el grueso, que es lo que importa.
+ */
+export const FINE_GAIN = 0.3;
 
 export interface DragInfo {
   active: boolean;

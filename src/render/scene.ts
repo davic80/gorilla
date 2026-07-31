@@ -9,7 +9,7 @@
 import { rooftop } from '../core/city';
 import type { Match } from '../core/match';
 import type { DragInfo } from '../input/aim';
-import { pullForPower } from '../input/aim';
+import { PULL_COARSE } from '../input/aim';
 import { GAUGES_BOTTOM, drawGauges, powerColor, toCanvasAngle } from './gauges';
 import type { TerrainLayer } from './terrainLayer';
 import type { Viewport } from './viewport';
@@ -579,7 +579,7 @@ function drawPull(ctx: CanvasRenderingContext2D, drag: DragInfo, match: Match): 
   ctx.lineWidth = drag.fine ? 2 : 1;
   ctx.setLineDash([3, 5]);
   ctx.beginPath();
-  ctx.arc(drag.anchorX, drag.anchorY, pullForPower(85), 0, Math.PI * 2);
+  ctx.arc(drag.anchorX, drag.anchorY, PULL_COARSE, 0, Math.PI * 2);
   ctx.stroke();
   ctx.setLineDash([]);
 
