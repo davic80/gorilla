@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Gorilla</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0b1026" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+
+    <!-- Todo el overlay deja pasar el puntero salvo los botones: asi se puede
+         tensar el tiro arrastrando desde cualquier punto de la pantalla. -->
+    <div id="overlay">
+      <header id="topbar">
+        <div class="score" data-player="0"><b id="scoreA">0</b><span>JUG 1</span></div>
+        <div class="middle">
+          <button type="button" id="assist" class="chip" title="Ayuda de mira">⌒⌒</button>
+          <div class="wind"><span id="windArrow">→</span><b id="windValue">0.0</b></div>
+          <button type="button" id="mute" class="chip" title="Sonido">🔊</button>
+        </div>
+        <div class="score" data-player="1"><b id="scoreB">0</b><span>JUG 2</span></div>
+      </header>
+
+      <!-- Solo con ?diag=1: dice que canales de respuesta hay vivos en ESTE
+           aparato, que es la unica forma de diagnosticar la vibracion sin
+           tenerlo en la mano. -->
+      <pre id="diag" hidden></pre>
+
+      <!-- Control 100% tactil: no hay un solo boton. Se tensa arrastrando, se
+           lanza al soltar y se cancela tocando con un segundo dedo. Los
+           indicadores de angulo y potencia los pinta el canvas arriba, donde no
+           los tapa la mano. -->
+      <div id="banner" hidden></div>
+    </div>
+
+    <!-- La arena esta disenada en vertical: en apaisado no cabe la parabola y
+         la ciudad se aplasta. Antes que degradar el juego, se pide girar. -->
+    <div id="rotate"><span>📱</span>Gira el móvil<small>Gorilla se juega en vertical</small></div>
+
+    <script type="module" src="/src/app.ts"></script>
+  </body>
+</html>

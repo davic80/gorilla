@@ -1,0 +1,227 @@
+:root {
+  /* Publicado para que el viewport en TS pueda leer el inset real del movil. */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  /* Lo fija el render: la banda de HUD la decide el viewport en unidades de
+     mundo, no el CSS. */
+  --hud-band: 120px;
+  --p0: #5ee6a8;
+  --p1: #ff8fa3;
+  color-scheme: dark;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0b1026;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #e8edfb;
+}
+
+#stage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  /* Clave del control: el overlay no captura el puntero, solo sus botones. */
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- barra superior ---------- */
+
+#topbar {
+  height: var(--hud-band);
+  padding: calc(var(--safe-top) + 12px) 18px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+  font: 600 10px/1 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  color: #7c8bb0;
+}
+
+.score b {
+  font: 700 30px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* La banda superior es transparente: el marcador se despega del cielo con su
+     propia sombra, no con un fondo opaco. */
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.score span {
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.7);
+}
+
+.score[data-player="0"] b {
+  color: var(--p0);
+}
+
+.score[data-player="1"] b {
+  color: var(--p1);
+}
+
+.middle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wind {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #141c3d;
+  font: 600 15px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #b9c6e6;
+}
+
+/* Ajustes, no controles de juego: el tiro sigue siendo 100% tactil y estos
+   viven arriba, fuera de la zona de arrastre. */
+.chip {
+  pointer-events: auto;
+  min-width: 38px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid #26315c;
+  border-radius: 999px;
+  background: #141c3d;
+  color: #b9c6e6;
+  font: 600 13px/1 ui-sans-serif, system-ui, sans-serif;
+  touch-action: none;
+}
+
+/* Los puntos de ayuda necesitan cuerpo para contarse de un vistazo. */
+#assist {
+  font-size: 17px;
+  letter-spacing: 0.12em;
+}
+
+.chip:active {
+  background: #1e2a55;
+}
+
+.chip[data-off="true"] {
+  color: #5b688c;
+  opacity: 0.6;
+}
+
+.wind span {
+  /* inline-block obligatorio: `transform` no se aplica a elementos inline, asi
+     que la flecha del viento nunca llegaba a girar. */
+  display: inline-block;
+  font-size: 18px;
+  transition: transform 0.25s ease;
+}
+
+#diag {
+  margin: 6px 18px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #141c3dcc;
+  font: 500 10px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #9fb2e0;
+  white-space: pre-wrap;
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+#diag[hidden] {
+  display: none;
+}
+
+/* ---------- banner de estado ---------- */
+
+#banner {
+  margin: auto auto;
+  padding: 14px 26px;
+  border-radius: 14px;
+  background: #141c3dee;
+  font: 700 20px/1.35 ui-sans-serif, system-ui, sans-serif;
+  text-align: center;
+  letter-spacing: 0.02em;
+  /* La segunda linea es la instruccion tactil, en tono menor. */
+  white-space: pre-line;
+}
+
+#banner[hidden] {
+  display: none;
+}
+
+/* La franja de control no tiene DOM: es zona tactil pura, la pinta el canvas y
+   los indicadores viven arriba. Aqui no queda nada que estilar. */
+
+/* ---------- bloqueo de apaisado ---------- */
+
+#rotate {
+  display: none;
+}
+
+@media (orientation: landscape) {
+  #rotate {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #0b1026;
+    font: 700 22px/1.3 ui-sans-serif, system-ui, sans-serif;
+    color: #e8edfb;
+    text-align: center;
+    /* Tapa de verdad: nada de tocar el juego a ciegas por detras. */
+    pointer-events: auto;
+  }
+
+  #rotate span {
+    font-size: 46px;
+    animation: tilt 1.8s ease-in-out infinite;
+  }
+
+  #rotate small {
+    font: 500 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+    color: #8d9bc0;
+  }
+}
+
+@keyframes tilt {
+  0%,
+  100% {
+    transform: rotate(-28deg);
+  }
+  50% {
+    transform: rotate(0deg);
+  }
+}
