@@ -8,7 +8,7 @@
  */
 
 import type { AssistLevel } from '../core/constants';
-import type { Match } from '../core/match';
+import { WIND_MAX, type Match } from '../core/match';
 import { applyTranslations, lang, playerName, setLang, t, type Lang } from '../i18n';
 
 export interface HudHooks {
@@ -53,6 +53,7 @@ function setHidden(el: HTMLElement, hidden: boolean): void {
 export class Hud {
   private readonly scoreA = need('scoreA');
   private readonly scoreB = need('scoreB');
+  private readonly wind = need('windPill');
   private readonly windArrow = need('windArrow');
   private readonly windValue = need('windValue');
   private readonly banner = need('banner');
@@ -128,8 +129,13 @@ export class Hud {
     setText(this.scoreA, String(match.players[0].score));
     setText(this.scoreB, String(match.players[1].score));
 
-    // La flecha apunta a donde empuja el viento; el numero da la magnitud.
+    // La flecha apunta a donde empuja el viento y el numero da la magnitud;
+    // el nivel del agua la hace legible sin leer nada.
     setText(this.windValue, Math.abs(match.wind).toFixed(1));
+    const fill = Math.min(1, Math.abs(match.wind) / WIND_MAX).toFixed(3);
+    if (this.wind.style.getPropertyValue('--fill') !== fill) {
+      this.wind.style.setProperty('--fill', fill);
+    }
     const flip = match.wind < 0 ? 'scaleX(-1)' : 'none';
     if (this.windArrow.style.transform !== flip) this.windArrow.style.transform = flip;
 

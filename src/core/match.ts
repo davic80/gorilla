@@ -100,13 +100,23 @@ function newPlayer(home: number, facing: 1 | -1, score = 0): PlayerState {
  * original de 1991: es la aleatoriedad justa que impide memorizar tiros y le da
  * coartada al que pierde.
  */
+const WIND_BASE = 9;
+const WIND_GUST = 2.2;
+
+/**
+ * Techo practico del viento. Exportado porque el indicador lo necesita para
+ * saber cuanto llenar: si se dedujera a ojo, cambiar el rango dejaria la
+ * piscina mintiendo en silencio.
+ */
+export const WIND_MAX = WIND_BASE * WIND_GUST;
+
 export function rollWind(rng: Rng): number {
   // Base +-9 con una racha de hasta 2,2x en uno de cada tres turnos: la banda
   // habitual ronda 1-7 y el techo llega a ~20. Las rachas extremas son raras a
   // proposito — son las que hacen memorable un turno, y dejan de serlo si
   // aparecen cada dos por tres.
-  let wind = rng.range(-9, 9);
-  if (rng.bool(1 / 3)) wind *= rng.range(1, 2.2);
+  let wind = rng.range(-WIND_BASE, WIND_BASE);
+  if (rng.bool(1 / 3)) wind *= rng.range(1, WIND_GUST);
   return wind;
 }
 

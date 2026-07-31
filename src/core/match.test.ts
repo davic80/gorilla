@@ -8,6 +8,7 @@ import {
   HIT_H,
   HIT_W,
   NEAR_MISS_R,
+  WIND_MAX,
   clampAim,
   createMatch,
   distanceToGorilla,
@@ -306,5 +307,20 @@ describe('determinismo de partida completa', () => {
     expect(a.terrain.cells).toEqual(b.terrain.cells);
     expect(a.turn).toBe(b.turn);
     expect(a.players.map((p) => p.score)).toEqual(b.players.map((p) => p.score));
+  });
+});
+
+describe('WIND_MAX', () => {
+  it('ningun viento generado se pasa del techo declarado', () => {
+    // El indicador llena la piscina dividiendo por WIND_MAX. Si el rango
+    // creciera sin actualizarlo, el agua se quedaria clavada arriba mintiendo.
+    let maximo = 0;
+    for (let t = 0; t < 20000; t++) {
+      maximo = Math.max(maximo, Math.abs(windForTurn(9876, t)));
+    }
+    expect(maximo).toBeLessThanOrEqual(WIND_MAX);
+    // Y el techo tiene que ser alcanzable de verdad, no un numero inflado que
+    // deje la piscina a media asta para siempre.
+    expect(maximo).toBeGreaterThan(WIND_MAX * 0.95);
   });
 });
