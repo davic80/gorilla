@@ -13,16 +13,23 @@ import { Terrain, type DirtyRect } from './terrain';
 
 export type Phase = 'aiming' | 'flying' | 'impact' | 'roundOver' | 'matchOver';
 
-/** Caja de golpeo del gorila, en unidades de mundo. Algo mas estrecha que el */
-/** dibujo: es mas justo fallar por poco que acertar por poco.                */
-export const HIT_W = 5;
-export const HIT_H = 6;
+/**
+ * Caja de golpeo, en unidades de mundo. Tiene que cubrir la silueta DIBUJADA:
+ * si el platano atraviesa una cabeza que se ve en pantalla y no pasa nada, el
+ * juego parece roto. `scene.test.ts` ata estos numeros al dibujo para que un
+ * cambio de arte no vuelva a desincronizarlos en silencio.
+ */
+export const HIT_W = 5.8;
+export const HIT_H = 8.8;
 
 export const EXPLOSION_R = 3.5;
-/** Radio de gracia: el estallido tambien mata si pasa muy cerca. */
-export const SPLASH_R = 2;
-/** Por debajo de esto el tiro cuenta como rozon, para el juice de F2. */
-export const NEAR_MISS_R = 9;
+/**
+ * El alcance del estallido se mide contra la SUPERFICIE del cuerpo, no contra
+ * un punto central. Medirlo al centro hacia que un platano caido a los pies
+ * quedara fuera de rango mientras uno a la altura del pecho, a la misma
+ * distancia real, si mataba.
+ */
+export const NEAR_MISS_R = 6.5;
 
 export const ANGLE_MIN = -20;
 export const ANGLE_MAX = 100;
@@ -176,6 +183,14 @@ function insideBox(box: ReturnType<typeof hitBox>, x: number, y: number): boolea
   return x >= box.x0 && x <= box.x1 && y >= box.y0 && y <= box.y1;
 }
 
+/** Distancia de un punto a la caja del gorila. Cero si esta dentro. */
+export function distanceToGorilla(match: Match, player: 0 | 1, x: number, y: number): number {
+  const box = hitBox(match, player);
+  const dx = Math.max(box.x0 - x, 0, x - box.x1);
+  const dy = Math.max(box.y0 - y, 0, y - box.y1);
+  return Math.hypot(dx, dy);
+}
+
 export function clampAim(aim: Aim): Aim {
   return {
     angle: Math.max(ANGLE_MIN, Math.min(ANGLE_MAX, aim.angle)),
@@ -225,13 +240,9 @@ function detonate(match: Match, x: number, y: number): void {
   let nearMiss = false;
 
   for (const player of [0, 1] as const) {
-    const box = match.players[player];
-    const spot = rooftop(match.city, box.home);
-    const cx = spot.x;
-    const cy = spot.y + HIT_H / 2;
-    const dist = Math.hypot(x - cx, y - cy);
-
-    if (dist <= EXPLOSION_R + SPLASH_R) hit = player;
+    const dist = distanceToGorilla(match, player, x, y);
+    // Si la onda alcanza el cuerpo, mata. Es una regla que se explica sola.
+    if (dist <= EXPLOSION_R) hit = player;
     else if (dist <= NEAR_MISS_R) nearMiss = true;
   }
 

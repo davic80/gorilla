@@ -19,6 +19,7 @@ import { FIXED_STEP, FixedStepClock } from './core/loop';
 import {
   clampAim,
   createMatch,
+  distanceToGorilla,
   fire,
   nextRound,
   previewTrajectory,
@@ -30,7 +31,7 @@ import { interpolate } from './core/physics';
 import { AimController } from './input/aim';
 import { Feedback } from './input/feedback';
 import { createStage, syncStageSize } from './render/canvas';
-import { TAUNT_DURATION, TAUNT_PUMPS, drawScene } from './render/scene';
+import { DUCK_DURATION, GESTURE, drawScene, type Gesture, type GestureKind } from './render/scene';
 import { TerrainLayer } from './render/terrainLayer';
 import { computeViewport, readSafeInset, type Viewport } from './render/viewport';
 import { buildSky, cloudDriftStep, type Sky } from './render/sky';
@@ -98,14 +99,28 @@ let touchHint: number | null = 0;
 // haria saltar las nubes en cada cambio.
 let cloudDrift = 0;
 
-// El "uh uh uh" es adorno: usa Math.random a proposito, porque no debe entrar
+// Los gestos son adorno: usan Math.random a proposito, porque no deben entrar
 // en el flujo determinista que reproduce una partida desde su semilla.
-let taunts: [number | null, number | null] = [null, null];
-let nextTaunt = tauntGap();
+let gestures: [Gesture | null, Gesture | null] = [null, null];
+let ducks: [number | null, number | null] = [null, null];
+/** Quien ya se ha agachado en el tiro en curso: uno por platano, no mas. */
+let ducked: [boolean, boolean] = [false, false];
 
-function tauntGap(): number {
-  return 5 + Math.random() * 8;
+/** Segundos sin que nadie apunte antes de que los gorilas se impacienten. */
+let idle = 0;
+let nextBeat = beatGap();
+
+function beatGap(): number {
+  return 9 + Math.random() * 6;
 }
+
+/**
+ * A que distancia del cuerpo se agacha un gorila.
+ *
+ * Mayor que el radio del estallido (3,5): tiene que reaccionar a lo que va a
+ * fallar por poco, no a lo que ya le ha dado.
+ */
+const DUCK_RADIUS = 7.5;
 
 function initialSeed(): number {
   const fromUrl = new URLSearchParams(location.hash.slice(1)).get('seed');
@@ -131,25 +146,63 @@ function advance(): void {
   publishSeed();
 }
 
-function startTaunt(player: 0 | 1): void {
-  if (taunts[player] !== null) return;
-  taunts[player] = 0;
-  // Los gritos caen en el punto alto de cada brazada, no al arrancar el ciclo.
-  sfx.taunt(TAUNT_DURATION / TAUNT_PUMPS, TAUNT_DURATION / (2 * TAUNT_PUMPS));
+function startGesture(player: 0 | 1, kind: GestureKind): void {
+  if (gestures[player] !== null) return;
+  gestures[player] = { kind, t: 0 };
+
+  // El sonido cae en el punto alto de cada brazada, no al arrancar el ciclo:
+  // por eso el desfase de medio periodo.
+  const spec = GESTURE[kind];
+  const spacing = spec.duration / spec.pumps;
+  if (kind === 'hoot') sfx.taunt(spacing, spacing / 2);
+  else sfx.chestBeat(spacing, spacing / 2);
 }
 
-function updateTaunts(delta: number): void {
+function updateGestures(delta: number): void {
   for (const player of [0, 1] as const) {
-    const elapsed = taunts[player];
-    if (elapsed === null) continue;
-    const next = elapsed + delta;
-    taunts[player] = next >= TAUNT_DURATION ? null : next;
+    const gesture = gestures[player];
+    if (gesture === null) continue;
+    const t = gesture.t + delta;
+    gestures[player] = t >= GESTURE[gesture.kind].duration ? null : { kind: gesture.kind, t };
   }
 
-  nextTaunt -= delta;
-  if (nextTaunt > 0) return;
-  nextTaunt = tauntGap();
-  if (match.phase === 'aiming') startTaunt(Math.random() < 0.5 ? 0 : 1);
+  for (const player of [0, 1] as const) {
+    const duck = ducks[player];
+    if (duck === null) continue;
+    const t = duck + delta;
+    ducks[player] = t >= DUCK_DURATION ? null : t;
+  }
+
+  // Si nadie apunta durante mucho rato, los gorilas se impacientan.
+  if (match.phase === 'aiming' && aim.current === null) idle += delta;
+  else idle = 0;
+
+  if (idle >= nextBeat) {
+    idle = 0;
+    nextBeat = beatGap();
+    startGesture(Math.random() < 0.5 ? 0 : 1, 'chest');
+  }
+}
+
+/**
+ * Un platano que va a pasar rozando hace que el gorila se agache. Es la
+ * respuesta honesta a un fallo por poco: antes, un tiro milimetrico se
+ * quedaba en nada visible.
+ */
+function checkDucks(): void {
+  if (match.phase !== 'flying' || !match.projectile) return;
+  const { x, y } = match.projectile;
+
+  for (const player of [0, 1] as const) {
+    if (ducked[player]) continue;
+    // Nadie se agacha de su propio platano hasta que este de verdad en vuelo.
+    if (player === match.current && !match.armed) continue;
+    if (distanceToGorilla(match, player, x, y) > DUCK_RADIUS) continue;
+
+    ducked[player] = true;
+    ducks[player] = 0;
+    sfx.duck();
+  }
 }
 
 /** Sonido y celebracion en los cambios de fase, no en cada frame. */
@@ -165,9 +218,18 @@ function reactToPhase(): void {
     }
   }
 
+  // Se rie quien se agacho y salio vivo. La risa va detras del estallido, no
+  // encima.
+  if (previousPhase === 'flying' && match.phase !== 'flying') {
+    for (const player of [0, 1] as const) {
+      if (ducked[player] && match.impact?.hit !== player) sfx.laugh(0.4);
+    }
+    ducked = [false, false];
+  }
+
   if (match.phase === 'roundOver' || match.phase === 'matchOver') {
     const ganador = match.impact?.hit === 0 ? 1 : 0;
-    startTaunt(ganador);
+    startGesture(ganador, 'hoot');
   }
 
   previousPhase = match.phase;
@@ -263,7 +325,8 @@ function render(alpha: number, glow: number): void {
     hint,
     glow,
     fine,
-    taunts,
+    gestures,
+    ducks,
     touchHint,
     cloudDrift,
     time,
@@ -289,8 +352,9 @@ function frame(now: number): void {
   const speed = boosting && match.phase === 'flying' ? FAST_FORWARD : 1;
   for (let i = 0; i < tick.steps * speed; i++) stepMatch(match, FIXED_STEP);
 
+  checkDucks();
   reactToPhase();
-  updateTaunts(delta);
+  updateGestures(delta);
   if (touchHint !== null) touchHint += delta;
   cloudDrift += cloudDriftStep(match.wind, delta);
 

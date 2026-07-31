@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { rooftop } from './city';
 import { FIXED_STEP } from './loop';
 import {
   ANGLE_MAX,
   ANGLE_MIN,
+  EXPLOSION_R,
+  HIT_H,
+  HIT_W,
+  NEAR_MISS_R,
   clampAim,
   createMatch,
+  distanceToGorilla,
   fire,
   hitBox,
   launchPoint,
@@ -167,6 +173,48 @@ describe('impacto', () => {
     runUntilOut(match, 'flying');
     runUntilOut(match, 'impact');
     expect(match.phase).toBe('matchOver');
+  });
+});
+
+describe('alcance del impacto', () => {
+  const match = () => createMatch(777);
+
+  it('un platano que roza la cabeza cuenta como impacto', () => {
+    // El fallo que se reporto jugando: la caja acababa por debajo de la cabeza
+    // dibujada, asi que el platano la atravesaba sin que pasara nada.
+    const m = match();
+    const spot = rooftop(m.city, m.players[1].home);
+    const alturaCabeza = spot.y + HIT_H * 0.85;
+    expect(distanceToGorilla(m, 1, spot.x, alturaCabeza)).toBe(0);
+  });
+
+  it('un platano a los pies tambien mata', () => {
+    // Se medía al centro del cuerpo, asi que un impacto al ras del tejado
+    // quedaba fuera de rango mientras uno al pecho, a la misma distancia real,
+    // si mataba.
+    const m = match();
+    const spot = rooftop(m.city, m.players[1].home);
+    expect(distanceToGorilla(m, 1, spot.x + HIT_W / 2 + 1, spot.y)).toBeLessThan(EXPLOSION_R);
+  });
+
+  it('la distancia se mide a la superficie del cuerpo, no a un punto', () => {
+    const m = match();
+    const spot = rooftop(m.city, m.players[0].home);
+    // Dentro del cuerpo: distancia cero a cualquier altura.
+    for (const frac of [0.1, 0.5, 0.95]) {
+      expect(distanceToGorilla(m, 0, spot.x, spot.y + HIT_H * frac)).toBe(0);
+    }
+    // Y fuera crece con la separacion real.
+    const cerca = distanceToGorilla(m, 0, spot.x + HIT_W / 2 + 2, spot.y + 3);
+    const lejos = distanceToGorilla(m, 0, spot.x + HIT_W / 2 + 8, spot.y + 3);
+    expect(cerca).toBeCloseTo(2, 6);
+    expect(lejos).toBeGreaterThan(cerca);
+  });
+
+  it('un tiro lejano sigue siendo fallo', () => {
+    const m = match();
+    const spot = rooftop(m.city, m.players[0].home);
+    expect(distanceToGorilla(m, 0, spot.x + 20, spot.y)).toBeGreaterThan(NEAR_MISS_R);
   });
 });
 

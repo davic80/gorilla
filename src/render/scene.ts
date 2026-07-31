@@ -19,9 +19,27 @@ import { drawWindows, type CityWindow } from './windows';
 
 export const BANANA_R = 1.5;
 
-/** Duracion del "uh uh uh": tres bombeos de brazos. */
-export const TAUNT_DURATION = 1.08;
-export const TAUNT_PUMPS = 3;
+export type GestureKind = 'hoot' | 'chest';
+
+export interface Gesture {
+  kind: GestureKind;
+  /** Segundos transcurridos del gesto. */
+  t: number;
+}
+
+/**
+ * Los dos gestos comparten motor y se distinguen por el barrido de los brazos:
+ * el "uh uh uh" los lanza hacia ARRIBA y afuera; el golpe de pecho los cruza
+ * hacia DENTRO, contra el torso. De ahi que uno tenga barrido positivo y el
+ * otro negativo.
+ */
+export const GESTURE = {
+  hoot: { duration: 1.08, pumps: 3, sweep: Math.PI * 0.75 },
+  chest: { duration: 1.05, pumps: 4, sweep: -0.95 },
+} as const;
+
+/** Cuanto dura el agacharse, en segundos. */
+export const DUCK_DURATION = 1.05;
 
 // Algo mas grandes que la caja de golpeo: el radio de salpicadura (5,5u desde
 // el centro) es mas ancho que el cuerpo, asi que verlos grandes no engaña.
@@ -38,8 +56,6 @@ const PLAYER_LIGHT = ['#b6f7da', '#ffd2dc'] as const;
 
 /** Brazos en reposo: caidos y ligeramente abiertos. */
 const REST_SPREAD = 0.3;
-/** Barrido hasta arriba. Cada brazo gira hacia SU lado, nunca cruzando el cuerpo. */
-const ARM_SWEEP = Math.PI * 0.75;
 
 export interface SceneInput {
   match: Match;
@@ -55,8 +71,10 @@ export interface SceneInput {
   glow: number;
   /** El arrastre esta en modo fino. */
   fine: boolean;
-  /** Segundos transcurridos del "uh uh uh" de cada jugador, o null. */
-  taunts: readonly [number | null, number | null];
+  /** Gesto en curso de cada jugador, o null. */
+  gestures: readonly [Gesture | null, Gesture | null];
+  /** Segundos que lleva agachado cada jugador, o null. */
+  ducks: readonly [number | null, number | null];
   /** Segundos de la demo del gesto, o null si ya se ha arrastrado alguna vez. */
   touchHint: number | null;
   /** Arrastre acumulado del cielo, en unidades de mundo. */
@@ -89,7 +107,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, vp: Viewport, input: Sc
 
   drawGhosts(ctx, vp, match);
   if (match.phase === 'aiming') drawHint(ctx, vp, input.hint, match.current);
-  drawGorillas(ctx, vp, match, input.time, input.taunts);
+  drawGorillas(ctx, vp, match, input.time, input.gestures, input.ducks);
   drawTrail(ctx, vp, match);
   if (input.banana) {
     drawBanana(ctx, vp, input.banana, (match.projectile?.t ?? 0) * 9);
@@ -176,27 +194,50 @@ function drawHint(
 }
 
 /**
- * Altura de cada brazo durante el "uh uh uh", en 0..1.
+ * Recorrido de cada brazo durante un gesto, en 0..1.
  *
  * Los brazos van ALTERNOS: medio ciclo de desfase entre uno y otro. La
- * envolvente arranca y termina en reposo, porque sin ella aparecerian ya
+ * envolvente arranca y termina en reposo, porque sin ella apareceran ya
  * levantados de golpe al empezar el gesto.
  */
-export function tauntArms(taunt: number | null): {
+export function gestureArms(gesture: Gesture | null): {
   left: number;
   right: number;
   envelope: number;
 } {
-  if (taunt === null) return { left: 0, right: 0, envelope: 0 };
+  if (gesture === null) return { left: 0, right: 0, envelope: 0 };
 
-  const progress = Math.max(0, Math.min(1, taunt / TAUNT_DURATION));
+  const spec = GESTURE[gesture.kind];
+  const progress = Math.max(0, Math.min(1, gesture.t / spec.duration));
   const envelope = Math.sin(Math.PI * progress);
-  const swing = Math.cos(progress * Math.PI * 2 * TAUNT_PUMPS);
+  const swing = Math.cos(progress * Math.PI * 2 * spec.pumps);
   return {
     left: envelope * (0.5 - 0.5 * swing),
     right: envelope * (0.5 + 0.5 * swing),
     envelope,
   };
+}
+
+/**
+ * Cuanto esta agachado, en 0..1.
+ *
+ * Baja de golpe y se levanta despacio: agacharse es un reflejo, incorporarse
+ * es mirar si ha pasado el peligro.
+ */
+export function duckPose(elapsed: number | null): number {
+  if (elapsed === null || elapsed < 0) return 0;
+  const DOWN = 0.09;
+  const HOLD = 0.68;
+  if (elapsed < DOWN) return elapsed / DOWN;
+  if (elapsed < HOLD) return 1;
+  if (elapsed < DUCK_DURATION) return 1 - (elapsed - HOLD) / (DUCK_DURATION - HOLD);
+  return 0;
+}
+
+/** Silueta dibujada, en unidades de mundo. La caja de golpeo debe cubrirla. */
+export function gorillaSilhouette(): { halfWidth: number; height: number } {
+  const headR = BODY_W * 0.24;
+  return { halfWidth: BODY_W * 0.37, height: BODY_H * 0.8 + headR * 1.24 };
 }
 
 /**
@@ -280,7 +321,8 @@ function drawGorillas(
   vp: Viewport,
   match: Match,
   time: number,
-  taunts: readonly [number | null, number | null],
+  gestures: readonly [Gesture | null, Gesture | null],
+  ducks: readonly [number | null, number | null],
 ): void {
   for (const player of [0, 1] as const) {
     const state = match.players[player];
@@ -291,15 +333,16 @@ function drawGorillas(
     const h = BODY_H * vp.scale;
     const active = player === match.current && match.phase === 'aiming';
 
-    const taunt = taunts[player];
-    const { left: leftRaise, right: rightRaise, envelope } = tauntArms(taunt);
+    const gesture = gestures[player];
+    const { left: leftRaise, right: rightRaise, envelope } = gestureArms(gesture);
+    const sweep = gesture ? GESTURE[gesture.kind].sweep : 0;
 
-    let leftArm = Math.PI / 2 + REST_SPREAD + leftRaise * ARM_SWEEP;
-    let rightArm = Math.PI / 2 - REST_SPREAD - rightRaise * ARM_SWEEP;
+    let leftArm = Math.PI / 2 + REST_SPREAD + leftRaise * sweep;
+    let rightArm = Math.PI / 2 - REST_SPREAD - rightRaise * sweep;
 
     // Fuera del "uh uh uh", el brazo de lanzar apunta a donde saldra el
     // platano: el gorila es tambien un indicador de punteria.
-    if (active && taunt === null) {
+    if (active && gesture === null) {
       const aimAngle = toCanvasAngle(state.aim.angle, state.facing);
       if (state.facing === 1) rightArm = aimAngle;
       else leftArm = aimAngle;
@@ -314,7 +357,16 @@ function drawGorillas(
     const hipHalf = w * 0.26;
 
     ctx.save();
-    ctx.globalAlpha = active || taunt !== null ? 1 : 0.82;
+    ctx.globalAlpha = active || gesture !== null ? 1 : 0.82;
+
+    // Agacharse: se aplasta contra el tejado en lugar de moverse entero, que es
+    // lo que hace que se lea como esquivar y no como bajar de altura.
+    const duck = duckPose(ducks[player]);
+    if (duck > 0) {
+      ctx.translate(cx, base);
+      ctx.scale(1 + 0.1 * duck, 1 - 0.32 * duck);
+      ctx.translate(-cx, -base);
+    }
 
     // Pies asomando bajo el torso: sin ellos el gorila flota sobre el tejado.
     ctx.fillStyle = dark;
@@ -325,7 +377,7 @@ function drawGorillas(
     }
 
     // Brazos detras del torso: el bombeo se lee sin taparle la cara.
-    const armed = active && taunt === null;
+    const armed = active && gesture === null;
     const armLen = h * 0.56;
     const armThick = w * 0.25;
     drawArm(ctx, cx - shoulderHalf * 0.88, shoulderY, leftArm, armLen, armThick, dark, body,
@@ -350,7 +402,7 @@ function drawGorillas(
     ctx.beginPath();
     ctx.ellipse(cx, shoulderY + h * 0.08, shoulderHalf * 0.78, h * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.globalAlpha = active || taunt !== null ? 1 : 0.82;
+    ctx.globalAlpha = active || gesture !== null ? 1 : 0.82;
 
     // Pecho.
     ctx.fillStyle = light;
@@ -396,7 +448,7 @@ function drawGorillas(
     const eyeY = headY - headR * 0.08;
     for (const side of [-1, 1]) {
       const ex = cx + side * headR * 0.4;
-      if (envelope > 0.5) {
+      if (envelope > 0.5 && gesture?.kind === 'hoot') {
         ctx.beginPath();
         ctx.roundRect(ex - headR * 0.2, eyeY - headR * 0.05, headR * 0.4, headR * 0.1, headR * 0.05);
         ctx.fill();

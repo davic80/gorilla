@@ -362,6 +362,38 @@ bajar la ganancia del tramo fino.
   y turno, no competir con la trayectoria.
 - **Nubes más grandes** en los tres planos.
 
+### Colisión y reacciones (31 jul 2026)
+
+**La caja de golpeo no cubría al gorila dibujado.** Reportado jugando: el
+plátano rozaba la cabeza y no pasaba nada. La caja medía 5 × 6 unidades mientras
+la silueta dibujada llega a 5,8 × 8,9 — **más de la mitad de la cabeza quedaba
+fuera**, así que el plátano la atravesaba por encima del área de colisión. Un
+juego en el que ves un impacto y no cuenta parece roto, y con razón.
+
+Además el reventón se medía **al centro del cuerpo**: un plátano caído a los
+pies quedaba fuera de rango mientras uno a la altura del pecho, a la misma
+distancia real, sí mataba.
+
+Corregido en dos frentes:
+
+- La caja pasa a 5,8 × 8,8 y `scene.test.ts` la **ata a la silueta dibujada**,
+  con tolerancia por los dos lados. Un cambio de arte no puede volver a
+  desincronizarlas en silencio, que es exactamente cómo apareció este fallo.
+- El alcance del estallido se mide **a la superficie del cuerpo**, no a un
+  punto. La regla queda: si la onda toca al gorila, lo mata.
+
+**Reacciones nuevas**, porque un fallo por poco tenía que verse:
+
+- **Agacharse**: un plátano que pasa a menos de 7,5u hace que el gorila se
+  aplaste contra el tejado, con sonido. Si sobrevive, se ríe. Baja de golpe y
+  se incorpora despacio — agacharse es un reflejo, levantarse es comprobar.
+- **Golpe de pecho** por impaciencia: si nadie apunta durante ~9-15 s, un gorila
+  se golpea el pecho. Sustituye al gesto aleatorio anterior, que saltaba
+  estuvieras jugando o no.
+- Los dos gestos comparten motor y se distinguen por el signo del barrido: el
+  «uh uh uh» lanza los brazos arriba y afuera, el golpe de pecho los cruza hacia
+  dentro.
+
 ### Hallazgos de F1 que cambian el plan
 
 **La potencia máxima se quedaba corta, y el culpable era la geometría.** Al
