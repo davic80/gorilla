@@ -4,6 +4,8 @@ Remake móvil de [GORILLA.BAS](https://github.com/pmachapman/basic-samples/blob/
 (Michael Abrash, IBM, 1991). Dos gorilas, plátanos explosivos y un skyline que
 se va desmoronando a cada impacto.
 
+**Jugar: [gorilla.ojoalprecio.com](https://gorilla.ojoalprecio.com)**
+
 **Control 100 % táctil, sin un solo botón**: se tensa arrastrando desde la
 franja baja, se lanza al soltar y se cancela tocando con un segundo dedo.
 Vertical, dos jugadores en el mismo móvil.
@@ -53,7 +55,13 @@ máscara de colisión, nunca al revés, así que lo que ves y lo que choca no pu
 separarse con el tiempo.
 
 El diseño, las decisiones tomadas y los hallazgos que las cambiaron están en
-[PLAN.md](PLAN.md).
+[PLAN.md](PLAN.md). El montaje del servidor, en [DEPLOY.md](DEPLOY.md).
+
+## Despliegue
+
+Cada push a `main` publica `ghcr.io/davic80/gorilla:latest` (y un tag con el SHA
+para volver atrás). En el servidor corre como nginx detrás del Caddy compartido,
+que termina TLS. Detalles en [DEPLOY.md](DEPLOY.md).
 
 ## Stack
 
