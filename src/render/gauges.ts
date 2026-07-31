@@ -10,6 +10,7 @@
  */
 
 import { ANGLE_MAX, ANGLE_MIN, type Aim } from '../core/match';
+import { t } from '../i18n';
 import type { Viewport } from './viewport';
 
 const TRACK = '#2a3563';
@@ -108,7 +109,7 @@ export function drawGauges(
     ctx.textAlign = 'center';
     ctx.font = '600 10px ui-sans-serif, system-ui, sans-serif';
     ctx.fillStyle = input.color;
-    ctx.fillText('P R E C I S I Ó N', colB, baseline + 16);
+    ctx.fillText(t('precision'), colB, baseline + 16);
     ctx.restore();
   }
 }

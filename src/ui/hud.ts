@@ -9,10 +9,13 @@
 
 import type { AssistLevel } from '../core/constants';
 import type { Match } from '../core/match';
+import { applyTranslations, lang, playerName, setLang, t, type Lang } from '../i18n';
 
 export interface HudHooks {
   onToggleMute: () => void;
   onCycleAssist: () => void;
+  onCoffee: () => void;
+  onLangChange: () => void;
 }
 
 /** Etiqueta del chip de ayuda: cuantos puntos, cuanta ayuda. */
@@ -22,11 +25,11 @@ const ASSIST_CHIP: Record<AssistLevel, string> = {
   leyenda: '•',
 };
 
-const ASSIST_NAME: Record<AssistLevel, string> = {
-  novato: 'NOVATO · arco completo',
-  normal: 'NORMAL · solo el arranque',
-  leyenda: 'LEYENDA · sin ayuda',
-};
+const ASSIST_KEY = {
+  novato: 'assistNovato',
+  normal: 'assistNormal',
+  leyenda: 'assistLeyenda',
+} as const;
 
 function need<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -57,14 +60,38 @@ export class Hud {
   private readonly mute = need<HTMLButtonElement>('mute');
   private readonly assist = need<HTMLButtonElement>('assist');
   private readonly version = need('version');
+  private readonly nameA = need('nameA');
+  private readonly nameB = need('nameB');
+  private readonly coffee = need<HTMLButtonElement>('coffee');
+  private readonly langToggle = need<HTMLButtonElement>('langToggle');
 
   /** Aviso efimero que se impone al banner de estado. */
   private toast: { text: string; until: number } | null = null;
 
-  constructor(hooks: HudHooks) {
+  constructor(private readonly hooks: HudHooks) {
     setText(this.version, `v${__APP_VERSION__}`);
     this.mute.addEventListener('click', () => hooks.onToggleMute());
     this.assist.addEventListener('click', () => hooks.onCycleAssist());
+    this.coffee.addEventListener('click', () => hooks.onCoffee());
+    this.langToggle.addEventListener('click', () => this.toggleLang());
+
+    document.documentElement.lang = lang();
+    applyTranslations();
+    this.refreshNames();
+  }
+
+  private toggleLang(): void {
+    const next: Lang = lang() === 'es' ? 'en' : 'es';
+    setLang(next);
+    this.refreshNames();
+    // El canvas dibuja su propio texto, asi que hay que avisar al juego.
+    this.hooks.onLangChange();
+  }
+
+  /** Los nombres llevan numero, asi que no salen de `data-i18n` a secas. */
+  private refreshNames(): void {
+    setText(this.nameA, playerName(0));
+    setText(this.nameB, playerName(1));
   }
 
   showDiagnostics(lines: string): void {
@@ -94,7 +121,7 @@ export class Hud {
   setAssist(level: AssistLevel, announce = true): void {
     setText(this.assist, ASSIST_CHIP[level]);
     this.assist.dataset.off = String(level === 'leyenda');
-    if (announce) this.showToast(`AYUDA\n${ASSIST_NAME[level]}`);
+    if (announce) this.showToast(`${t('assist')}\n${t(ASSIST_KEY[level])}`);
   }
 
   update(match: Match): void {
@@ -117,19 +144,17 @@ export class Hud {
 }
 
 function bannerText(match: Match): string | null {
-  const jugador = (i: 0 | 1) => (i === 0 ? 'JUG 1' : 'JUG 2');
-
   if (match.phase === 'matchOver') {
     const ganador = match.players[0].score > match.players[1].score ? 0 : 1;
-    return `GANA ${jugador(ganador)}\nToca para la revancha`;
+    return `${t('wins', { player: playerName(ganador) })}\n${t('tapRematch')}`;
   }
   if (match.phase === 'roundOver') {
     const ganador = match.impact?.hit === 0 ? 1 : 0;
-    return `RONDA PARA ${jugador(ganador)}\nToca para seguir`;
+    return `${t('roundTo', { player: playerName(ganador) })}\n${t('tapContinue')}`;
   }
   if (match.phase === 'impact' && match.impact) {
-    if (match.impact.hit !== null) return '¡TOCADO!';
-    if (match.impact.nearMiss) return '¡ROZÓ!';
+    if (match.impact.hit !== null) return t('hit');
+    if (match.impact.nearMiss) return t('nearMiss');
   }
   return null;
 }

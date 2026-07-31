@@ -19,13 +19,17 @@
          tensar el tiro arrastrando desde cualquier punto de la pantalla. -->
     <div id="overlay">
       <header id="topbar">
-        <div class="score" data-player="0"><b id="scoreA">0</b><span>JUG 1</span></div>
+        <div class="score" data-player="0">
+          <b id="scoreA">0</b><span id="nameA">JUGADOR 1</span>
+        </div>
         <div class="middle">
-          <button type="button" id="assist" class="chip" title="Ayuda de mira">⌒⌒</button>
+          <button type="button" id="assist" class="chip" title="Ayuda de mira">••</button>
           <div class="wind"><span id="windArrow">→</span><b id="windValue">0.0</b></div>
           <button type="button" id="mute" class="chip" title="Sonido">🔊</button>
         </div>
-        <div class="score" data-player="1"><b id="scoreB">0</b><span>JUG 2</span></div>
+        <div class="score" data-player="1">
+          <b id="scoreB">0</b><span id="nameB">JUGADOR 2</span>
+        </div>
       </header>
 
       <!-- Solo con ?diag=1: dice que canales de respuesta hay vivos en ESTE
@@ -40,23 +44,44 @@
       <div id="banner" hidden></div>
 
       <!-- La franja de abajo es zona de tiro: esta banda queda excluida del
-           gesto (ver `footerTop` en viewport.ts) para que el enlace se pueda
-           pulsar sin robarle arrastres al juego. -->
+           gesto (ver `footerTop` en viewport.ts) para que lo pulsable se pueda
+           tocar sin robarle arrastres al juego. -->
       <footer id="footer">
         <span id="version"></span>
+        <button type="button" id="coffee" data-i18n="coffee">☕ Invítame a un café</button>
+        <button type="button" id="langToggle" class="chip">
+          <span data-lang="es">ES</span><i>·</i><span data-lang="en">EN</span>
+        </button>
+      </footer>
+    </div>
+
+    <!-- Ko-fi, como en gasolineras. Manda cabeceras que impiden incrustarlo en
+         un iframe, asi que este dialogo confirma antes de abrir otra pestana:
+         un toque accidental en el pie no puede sacarte de la partida. -->
+    <div id="coffeeDialog" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="coffeeTitle">
+        <h2 id="coffeeTitle" data-i18n="coffeeTitle">¿Un café?</h2>
+        <p data-i18n="coffeeBody"></p>
+        <p class="note" data-i18n="coffeeNote"></p>
         <a
-          class="coffee"
-          href="https://www.paypal.com/donate/?hosted_button_id=7Z6JDTBCDCWHC"
+          id="coffeeOpen"
+          href="https://ko-fi.com/davic"
           target="_blank"
           rel="noopener noreferrer"
-          >☕ Invítame a un café</a
+          data-i18n="coffeeOpen"
+          >Abrir Ko-fi</a
         >
-      </footer>
+        <button type="button" id="coffeeLater" data-i18n="coffeeLater">Ahora no</button>
+      </div>
     </div>
 
     <!-- La arena esta disenada en vertical: en apaisado no cabe la parabola y
          la ciudad se aplasta. Antes que degradar el juego, se pide girar. -->
-    <div id="rotate"><span>📱</span>Gira el móvil<small>Gorilla se juega en vertical</small></div>
+    <div id="rotate">
+      <span>📱</span>
+      <b data-i18n="rotate">Gira el móvil</b>
+      <small data-i18n="rotateHint">Gorilla se juega en vertical</small>
+    </div>
 
     <script type="module" src="/src/app.ts"></script>
   </body>

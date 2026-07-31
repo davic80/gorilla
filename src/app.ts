@@ -77,7 +77,42 @@ const hud = new Hud({
     assist = ASSIST_ORDER[(ASSIST_ORDER.indexOf(assist) + 1) % ASSIST_ORDER.length]!;
     hud.setAssist(assist);
   },
+  onCoffee: () => setDialog(true),
+  // El chip de ayuda pinta su etiqueta traducida: al cambiar de idioma hay que
+  // repintarla sin anunciar nada, que nadie ha tocado el nivel.
+  onLangChange: () => hud.setAssist(assist, false),
 });
+
+/**
+ * Dialogo del cafe.
+ *
+ * Ko-fi manda cabeceras que impiden incrustarlo en un iframe, asi que no hay
+ * forma de mostrarlo dentro: lo que se puede hacer es confirmar antes de abrir
+ * otra pestana.
+ * Con el dialogo abierto la simulacion se congela, de modo que un toque
+ * accidental en el pie no te cuesta el turno ni deja un platano resolviendose
+ * a ciegas por detras.
+ */
+const coffeeDialog = document.querySelector<HTMLElement>('#coffeeDialog');
+let dialogOpen = false;
+
+function setDialog(open: boolean): void {
+  dialogOpen = open;
+  if (coffeeDialog) coffeeDialog.hidden = !open;
+}
+
+if (coffeeDialog) {
+  document.querySelector('#coffeeLater')?.addEventListener('click', () => setDialog(false));
+  // Abre en otra pestana y cierra el dialogo: al volver, la partida sigue igual.
+  document.querySelector('#coffeeOpen')?.addEventListener('click', () => setDialog(false));
+  // Tocar el fondo tambien cierra, que es lo que espera cualquiera en un movil.
+  coffeeDialog.addEventListener('pointerdown', (e) => {
+    if (e.target === coffeeDialog) setDialog(false);
+  });
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && dialogOpen) setDialog(false);
+  });
+}
 
 let match: Match = createMatch(initialSeed());
 let terrainLayer = new TerrainLayer(match.terrain);
@@ -236,7 +271,7 @@ function reactToPhase(): void {
 }
 
 const aim = new AimController(canvas, {
-  enabled: () => match.phase === 'aiming',
+  enabled: () => match.phase === 'aiming' && !dialogOpen,
   canStartAt: (_x, y) => y >= viewport.groundY - DRAG_ZONE_TOP && y < viewport.footerTop,
   facing: () => match.players[match.current].facing,
   onAim: (next, drag) => {
@@ -340,9 +375,10 @@ function frame(now: number): void {
 
   if (syncStageSize(stage)) refreshViewport();
 
-  // En apaisado la pantalla la tapa el aviso de girar: no tiene sentido seguir
-  // simulando una partida que nadie ve, y menos resolver un vuelo a ciegas.
-  if (stage.cssWidth > stage.cssHeight) {
+  // En apaisado la pantalla la tapa el aviso de girar, y con el dialogo abierto
+  // tampoco se ve nada: no tiene sentido seguir simulando una partida que nadie
+  // mira, y menos resolver un vuelo a ciegas.
+  if (stage.cssWidth > stage.cssHeight || dialogOpen) {
     requestAnimationFrame(frame);
     return;
   }

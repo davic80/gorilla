@@ -8,7 +8,7 @@ se va desmoronando a cada impacto.
 
 **Control 100 % táctil, sin un solo botón**: se tensa arrastrando desde la
 franja baja, se lanza al soltar y se cancela tocando con un segundo dedo.
-Vertical, dos jugadores en el mismo móvil.
+Vertical, dos jugadores en el mismo móvil. Español e inglés.
 
 ## Empezar
 

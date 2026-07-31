@@ -7,6 +7,7 @@
  */
 
 import { rooftop } from '../core/city';
+import { t } from '../i18n';
 import type { Match } from '../core/match';
 import type { DragInfo } from '../input/aim';
 import { PULL_COARSE } from '../input/aim';
@@ -615,7 +616,8 @@ function drawTouchHint(
   facing: 1 | -1,
   color: string,
 ): void {
-  const t = (elapsed % TOUCH_HINT_LOOP) / TOUCH_HINT_LOOP;
+  // `fase`, no `t`: `t` es la funcion de traduccion en este modulo.
+  const fase = (elapsed % TOUCH_HINT_LOOP) / TOUCH_HINT_LOOP;
   const ax = vp.cssWidth / 2;
   const ay = vp.groundY + vp.stripHeight * 0.2;
   // Se tensa hacia atras: al contrario de donde mira el gorila.
@@ -628,16 +630,16 @@ function drawTouchHint(
   const SNAP_END = 0.64;
   let progress: number;
   let alpha: number;
-  if (t < PULL_END) {
-    const k = t / PULL_END;
+  if (fase < PULL_END) {
+    const k = fase / PULL_END;
     progress = 1 - Math.pow(1 - k, 2);
     alpha = Math.min(1, k * 4);
-  } else if (t < SNAP_END) {
-    progress = 1 - (t - PULL_END) / (SNAP_END - PULL_END);
+  } else if (fase < SNAP_END) {
+    progress = 1 - (fase - PULL_END) / (SNAP_END - PULL_END);
     alpha = 1;
   } else {
     progress = 0;
-    alpha = Math.max(0, 1 - (t - SNAP_END) / (1 - SNAP_END));
+    alpha = Math.max(0, 1 - (fase - SNAP_END) / (1 - SNAP_END));
   }
 
   const fx = ax + dx * progress;
@@ -681,6 +683,6 @@ function drawTouchHint(
   ctx.fillStyle = '#8d9bc0';
   ctx.textAlign = 'center';
   ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif';
-  ctx.fillText('Arrastra desde aquí y suelta', ax, vp.groundY + vp.stripHeight * 0.72);
+  ctx.fillText(t('dragHint'), ax, vp.groundY + vp.stripHeight * 0.72);
   ctx.restore();
 }
